@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiSettings, FiImage, FiUpload, FiTrash2, FiSave, FiEye } = FiIcons;
+const { FiSettings, FiImage, FiUpload, FiTrash2, FiSave, FiEye, FiType, FiMapPin } = FiIcons;
 
 const AdminPanel = ({ appConfig, setAppConfig }) => {
   const [activeTab, setActiveTab] = useState('frames');
@@ -14,10 +14,20 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
     primaryColor: appConfig.primaryColor,
     secondaryColor: appConfig.secondaryColor
   });
+  const [textOverlaySettings, setTextOverlaySettings] = useState(appConfig.textOverlay || {
+    enabled: false,
+    text: '',
+    useLocation: false,
+    locationPrefix: 'Ich bin hier:',
+    position: 'bottom',
+    fontSize: 'medium',
+    colorScheme: 'primary' // 'primary', 'blackwhite'
+  });
 
   const tabs = [
     { id: 'frames', label: 'Rahmen', icon: FiImage },
     { id: 'logo', label: 'Logo', icon: FiUpload },
+    { id: 'textOverlay', label: 'Text Overlay', icon: FiType },
     { id: 'settings', label: 'Einstellungen', icon: FiSettings }
   ];
 
@@ -60,6 +70,13 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
     setAppConfig(prev => ({
       ...prev,
       logo: logoSettings
+    }));
+  };
+
+  const updateTextOverlay = () => {
+    setAppConfig(prev => ({
+      ...prev,
+      textOverlay: textOverlaySettings
     }));
   };
 
@@ -222,6 +239,185 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
     </div>
   );
 
+  const renderTextOverlayTab = () => (
+    <div className="space-y-6">
+      <div className="bg-gray-50 rounded-lg p-6">
+        <h3 className="font-semibold text-gray-800 mb-4">Text Overlay Einstellungen</h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="enableTextOverlay"
+              checked={textOverlaySettings.enabled}
+              onChange={(e) => setTextOverlaySettings(prev => ({ 
+                ...prev, 
+                enabled: e.target.checked 
+              }))}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+            <label htmlFor="enableTextOverlay" className="ml-2 block text-sm text-gray-700">
+              Text Overlay aktivieren
+            </label>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="radio"
+                  id="customText"
+                  name="textType"
+                  checked={!textOverlaySettings.useLocation}
+                  onChange={() => setTextOverlaySettings(prev => ({ 
+                    ...prev, 
+                    useLocation: false 
+                  }))}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                />
+                <label htmlFor="customText" className="block text-sm font-medium text-gray-700">
+                  Benutzerdefinierter Text
+                </label>
+              </div>
+              <input
+                type="text"
+                value={textOverlaySettings.text}
+                onChange={(e) => setTextOverlaySettings(prev => ({ 
+                  ...prev, 
+                  text: e.target.value 
+                }))}
+                disabled={textOverlaySettings.useLocation}
+                placeholder="Slogan oder URL hinzufügen"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="radio"
+                  id="locationText"
+                  name="textType"
+                  checked={textOverlaySettings.useLocation}
+                  onChange={() => setTextOverlaySettings(prev => ({ 
+                    ...prev, 
+                    useLocation: true 
+                  }))}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                />
+                <label htmlFor="locationText" className="block text-sm font-medium text-gray-700">
+                  Standort anzeigen
+                </label>
+              </div>
+              {textOverlaySettings.useLocation && (
+                <input
+                  type="text"
+                  value={textOverlaySettings.locationPrefix}
+                  onChange={(e) => setTextOverlaySettings(prev => ({ 
+                    ...prev, 
+                    locationPrefix: e.target.value 
+                  }))}
+                  placeholder="Ich bin hier:"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Position
+              </label>
+              <select
+                value={textOverlaySettings.position}
+                onChange={(e) => setTextOverlaySettings(prev => ({ 
+                  ...prev, 
+                  position: e.target.value 
+                }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="top">Oben</option>
+                <option value="bottom">Unten</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Schriftgröße
+              </label>
+              <select
+                value={textOverlaySettings.fontSize}
+                onChange={(e) => setTextOverlaySettings(prev => ({ 
+                  ...prev, 
+                  fontSize: e.target.value 
+                }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="small">Klein</option>
+                <option value="medium">Mittel</option>
+                <option value="large">Groß</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Farbschema
+              </label>
+              <select
+                value={textOverlaySettings.colorScheme}
+                onChange={(e) => setTextOverlaySettings(prev => ({ 
+                  ...prev, 
+                  colorScheme: e.target.value 
+                }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="primary">Primär- und Sekundärfarbe</option>
+                <option value="blackwhite">Schwarz & Weiß</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={updateTextOverlay}
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
+          >
+            <SafeIcon icon={FiSave} className="w-4 h-4" />
+            <span>Text-Einstellungen speichern</span>
+          </button>
+        </div>
+
+        {textOverlaySettings.enabled && (
+          <div className="mt-6 p-4 bg-white rounded-lg border">
+            <h4 className="font-medium text-gray-800 mb-2">Vorschau</h4>
+            <div className="relative w-full h-16 flex items-center justify-center">
+              <div 
+                className={`
+                  px-4 py-1 rounded-lg 
+                  ${textOverlaySettings.colorScheme === 'primary' 
+                    ? `bg-[${appConfig.primaryColor}] text-[${appConfig.secondaryColor}]` 
+                    : 'bg-black text-white'}
+                  ${textOverlaySettings.fontSize === 'small' ? 'text-sm' : 
+                    textOverlaySettings.fontSize === 'large' ? 'text-xl' : 'text-base'}
+                `}
+                style={{
+                  backgroundColor: textOverlaySettings.colorScheme === 'primary' 
+                    ? appConfig.primaryColor 
+                    : 'black',
+                  color: textOverlaySettings.colorScheme === 'primary' 
+                    ? appConfig.secondaryColor 
+                    : 'white'
+                }}
+              >
+                {textOverlaySettings.useLocation 
+                  ? `${textOverlaySettings.locationPrefix} [Standort wird angezeigt]` 
+                  : textOverlaySettings.text || 'Beispieltext'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderSettingsTab = () => (
     <div className="space-y-6">
       <div className="bg-gray-50 rounded-lg p-6">
@@ -294,13 +490,13 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
             </p>
           </div>
 
-          <div className="flex border-b border-gray-200">
+          <div className="flex flex-wrap border-b border-gray-200">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex-1 px-6 py-4 font-medium flex items-center justify-center space-x-2 transition-all duration-200
+                  flex-1 min-w-[120px] px-4 py-4 font-medium flex items-center justify-center space-x-2 transition-all duration-200
                   ${activeTab === tab.id
                     ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -308,7 +504,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                 `}
               >
                 <SafeIcon icon={tab.icon} className="w-5 h-5" />
-                <span>{tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
@@ -316,6 +512,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
           <div className="p-6">
             {activeTab === 'frames' && renderFramesTab()}
             {activeTab === 'logo' && renderLogoTab()}
+            {activeTab === 'textOverlay' && renderTextOverlayTab()}
             {activeTab === 'settings' && renderSettingsTab()}
           </div>
         </motion.div>

@@ -6,7 +6,7 @@ import FrameSelector from './FrameSelector';
 import SocialShare from './SocialShare';
 import html2canvas from 'html2canvas';
 
-const { FiCamera, FiRotateCcw, FiDownload, FiShare2, FiX } = FiIcons;
+const { FiCamera, FiRotateCcw, FiDownload, FiShare2, FiX, FiMapPin } = FiIcons;
 
 const CameraView = ({ appConfig }) => {
   const [stream, setStream] = useState(null);
@@ -14,18 +14,85 @@ const CameraView = ({ appConfig }) => {
   const [selectedFrame, setSelectedFrame] = useState(appConfig.frames.find(f => f.isDefault) || appConfig.frames[0]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const previewRef = useRef(null);
 
+  // Get the text to display in the overlay
+  const getOverlayText = () => {
+    if (!appConfig.textOverlay || !appConfig.textOverlay.enabled) return null;
+    
+    if (appConfig.textOverlay.useLocation) {
+      if (locationError) {
+        return "Standort nicht verfügbar";
+      } else if (!userLocation) {
+        return "Standort wird ermittelt...";
+      } else {
+        return `${appConfig.textOverlay.locationPrefix} ${userLocation}`;
+      }
+    } else {
+      return appConfig.textOverlay.text || "";
+    }
+  };
+
   useEffect(() => {
     startCamera();
+    
+    // If location is enabled, get user's location
+    if (appConfig.textOverlay?.enabled && appConfig.textOverlay?.useLocation) {
+      getUserLocation();
+    }
+    
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [appConfig.textOverlay]);
+
+  const getUserLocation = () => {
+    setLocationError(null);
+    
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation wird von Ihrem Browser nicht unterstützt");
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          // Use reverse geocoding to get a readable location
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+          
+          // Extract city/town or suburb name as a readable location
+          const locationName = data.address?.city || 
+                              data.address?.town || 
+                              data.address?.village || 
+                              data.address?.suburb || 
+                              "Unbekannter Ort";
+          
+          setUserLocation(locationName);
+        } catch (error) {
+          console.error("Error fetching location name:", error);
+          setUserLocation(`${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`);
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        setLocationError(
+          error.code === 1 
+            ? "Standortzugriff verweigert" 
+            : "Standortermittlung fehlgeschlagen"
+        );
+      }
+    );
+  };
 
   const startCamera = async () => {
     try {
@@ -93,6 +160,56 @@ const CameraView = ({ appConfig }) => {
     setShowShareModal(true);
   };
 
+  // Function to determine text overlay style
+  const getTextOverlayStyle = () => {
+    if (!appConfig.textOverlay || !appConfig.textOverlay.enabled) return {};
+    
+    const { fontSize, colorScheme, position } = appConfig.textOverlay;
+    
+    // Base styles
+    const styles = {
+      position: 'absolute',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.25rem',
+      textAlign: 'center',
+      maxWidth: '90%',
+      fontWeight: 'bold',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+    };
+    
+    // Position
+    if (position === 'top') {
+      styles.top = '1rem';
+    } else {
+      styles.bottom = '1rem';
+    }
+    
+    // Font size
+    if (fontSize === 'small') {
+      styles.fontSize = '0.875rem';
+    } else if (fontSize === 'large') {
+      styles.fontSize = '1.25rem';
+    } else {
+      styles.fontSize = '1rem';
+    }
+    
+    // Colors
+    if (colorScheme === 'primary') {
+      styles.backgroundColor = appConfig.primaryColor;
+      styles.color = appConfig.secondaryColor;
+    } else {
+      styles.backgroundColor = 'black';
+      styles.color = 'white';
+    }
+    
+    return styles;
+  };
+
+  const overlayText = getOverlayText();
+  const textOverlayStyle = getTextOverlayStyle();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
@@ -156,6 +273,16 @@ const CameraView = ({ appConfig }) => {
                       />
                     </div>
                   )}
+                  
+                  {/* Text Overlay */}
+                  {appConfig.textOverlay?.enabled && overlayText && (
+                    <div style={textOverlayStyle}>
+                      {appConfig.textOverlay.useLocation && (
+                        <SafeIcon icon={FiMapPin} className="inline-block mr-1" />
+                      )}
+                      {overlayText}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -165,6 +292,16 @@ const CameraView = ({ appConfig }) => {
                   <div className="bg-white rounded-full p-4">
                     <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
+                </div>
+              )}
+              
+              {/* Live Text Overlay Preview */}
+              {!capturedImage && appConfig.textOverlay?.enabled && overlayText && (
+                <div style={textOverlayStyle}>
+                  {appConfig.textOverlay.useLocation && (
+                    <SafeIcon icon={FiMapPin} className="inline-block mr-1" />
+                  )}
+                  {overlayText}
                 </div>
               )}
             </div>
@@ -185,7 +322,7 @@ const CameraView = ({ appConfig }) => {
                   </motion.button>
                 </>
               ) : (
-                <div className="flex space-x-4">
+                <div className="flex flex-wrap justify-center gap-3">
                   <motion.button
                     onClick={retakePhoto}
                     className="bg-gray-600 text-white px-6 py-3 rounded-full font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"

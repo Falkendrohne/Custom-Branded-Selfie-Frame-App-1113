@@ -33,6 +33,15 @@ function App() {
       position: 'top-center',
       size: 'medium'
     },
+    textOverlay: {
+      enabled: false,
+      text: 'www.suchhunde-saarpfalz.de',
+      useLocation: false,
+      locationPrefix: 'Ich bin hier:',
+      position: 'bottom',
+      fontSize: 'medium',
+      colorScheme: 'primary'
+    },
     businessName: 'Suchhunde-SaarPfalz',
     primaryColor: '#8B0000',
     secondaryColor: '#FEA400'
