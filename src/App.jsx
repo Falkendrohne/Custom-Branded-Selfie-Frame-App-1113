@@ -12,7 +12,7 @@ function App() {
       {
         id: 1,
         name: 'Klassisch',
-        url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop&crop=center',
+        url: 'https://www.falkendrohne.de/selfie/rahmen3.png?w=400&h=600&fit=crop&crop=center',
         isDefault: true
       },
       {
@@ -29,18 +29,18 @@ function App() {
       }
     ],
     logo: {
-      url: 'https://via.placeholder.com/150x50/4F46E5/FFFFFF?text=LOGO',
+      url: 'https://www.falkendrohne.de/selfie/leander.png?text=LOGO',
       position: 'top-center',
       size: 'medium'
     },
-    businessName: 'Ihr Unternehmen',
-    primaryColor: '#4F46E5',
-    secondaryColor: '#10B981'
+    businessName: 'Suchhunde-SaarPfalz',
+    primaryColor: '#8B0000',
+    secondaryColor: '#FEA400'
   });
 
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-darkred-50 to-orange-100">
         <Navigation />
         <Routes>
           <Route 
