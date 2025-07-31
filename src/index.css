@@ -12,9 +12,37 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent iOS zoom on input focus */
+  -webkit-text-size-adjust: 100%;
 }
 
 #root {
   width: 100%;
   height: 100%;
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent iOS bounce scroll */
+  body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  #root {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Fix for iOS buttons */
+button,
+a.button,
+input[type="button"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border-radius: 0.5rem;
+  border: none;
 }

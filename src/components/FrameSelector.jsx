@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from 'react'
+import { motion } from 'framer-motion'
 
 const FrameSelector = ({ frames, selectedFrame, onSelectFrame }) => {
   return (
@@ -7,37 +7,36 @@ const FrameSelector = ({ frames, selectedFrame, onSelectFrame }) => {
       <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
         Rahmen auswählen
       </h3>
-      
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
         {frames.map((frame) => (
           <motion.div
             key={frame.id}
             onClick={() => onSelectFrame(frame)}
             className={`
               relative cursor-pointer rounded-lg overflow-hidden aspect-[3/4] border-4 transition-all duration-200
-              ${selectedFrame.id === frame.id 
-                ? 'border-indigo-600 shadow-lg' 
-                : 'border-gray-200 hover:border-indigo-300'
-              }
+              ${selectedFrame?.id === frame.id ? 'border-blue-600 shadow-lg' : 'border-gray-200 hover:border-blue-300'}
             `}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <div
-              className="w-full h-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${frame.url})` }}
-            />
+            {frame.url ? (
+              <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${frame.url})` }} />
+            ) : (
+              <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-500">
+                Kein Rahmen
+              </div>
+            )}
             
-            {selectedFrame.id === frame.id && (
-              <div className="absolute inset-0 bg-indigo-600/20 flex items-center justify-center">
+            {selectedFrame?.id === frame.id && (
+              <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
                 <div className="bg-white rounded-full p-2">
-                  <div className="w-3 h-3 bg-indigo-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
                 </div>
               </div>
             )}
             
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-              <p className="text-white text-sm font-medium text-center">
+              <p className="text-white text-xs sm:text-sm font-medium text-center">
                 {frame.name}
               </p>
             </div>
@@ -45,7 +44,7 @@ const FrameSelector = ({ frames, selectedFrame, onSelectFrame }) => {
         ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default FrameSelector;
+export default FrameSelector

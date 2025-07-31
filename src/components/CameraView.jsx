@@ -6,7 +6,7 @@ import FrameSelector from './FrameSelector';
 import SocialShare from './SocialShare';
 import html2canvas from 'html2canvas';
 
-const { FiCamera, FiRotateCcw, FiDownload, FiShare2, FiX, FiMapPin } = FiIcons;
+const { FiCamera, FiRotateCcw, FiShare2, FiX, FiMapPin } = FiIcons;
 
 const CameraView = ({ appConfig }) => {
   const [stream, setStream] = useState(null);
@@ -16,9 +16,13 @@ const CameraView = ({ appConfig }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const previewRef = useRef(null);
+
+  // Detect iOS device
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
   // Get the text to display in the overlay
   const getOverlayText = () => {
@@ -46,11 +50,21 @@ const CameraView = ({ appConfig }) => {
     }
     
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
   }, [appConfig.textOverlay]);
+
+  // Separate function to stop camera stream
+  const stopCamera = () => {
+    if (stream) {
+      const tracks = stream.getTracks();
+      tracks.forEach(track => {
+        track.stop();
+      });
+      setStream(null);
+    }
+    setCameraReady(false);
+  };
 
   const getUserLocation = () => {
     setLocationError(null);
@@ -96,63 +110,107 @@ const CameraView = ({ appConfig }) => {
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+      // Stop any existing stream first
+      stopCamera();
+      
+      // Request camera access with specific constraints for better iOS compatibility
+      const constraints = {
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        },
         audio: false
-      });
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
+      
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play()
+            .then(() => {
+              setCameraReady(true);
+            })
+            .catch(err => {
+              console.error("Error playing video:", err);
+              // Try again with a timeout
+              setTimeout(() => {
+                if (videoRef.current) {
+                  videoRef.current.play()
+                    .then(() => setCameraReady(true))
+                    .catch(() => setCameraReady(false));
+                }
+              }, 500);
+            });
+        };
       }
     } catch (error) {
       console.error('Fehler beim Zugriff auf die Kamera:', error);
-      alert('Kamera-Zugriff fehlgeschlagen. Bitte erlauben Sie den Kamera-Zugriff.');
+      alert('Kamera-Zugriff fehlgeschlagen. Bitte erlauben Sie den Kamera-Zugriff und aktualisieren Sie die Seite.');
+      setCameraReady(false);
     }
   };
 
   const capturePhoto = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || !cameraReady) return;
 
     setIsLoading(true);
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+      // Ensure video has valid dimensions
+      const videoWidth = video.videoWidth || video.clientWidth;
+      const videoHeight = video.videoHeight || video.clientHeight;
+      
+      if (videoWidth === 0 || videoHeight === 0) {
+        throw new Error('Video dimensions are invalid');
+      }
 
-    // Spiegeln des Videos für natürlichere Selfies
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, -canvas.width, 0);
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
 
-    const imageData = canvas.toDataURL('image/png');
-    setCapturedImage(imageData);
-    setIsLoading(false);
+      // Spiegeln des Videos für natürlichere Selfies
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, -canvas.width, 0);
+
+      const imageData = canvas.toDataURL('image/png');
+      setCapturedImage(imageData);
+      
+      // Stop camera stream after taking photo to prevent iOS issues
+      if (isIOS) {
+        stopCamera();
+      }
+    } catch (error) {
+      console.error('Fehler beim Aufnehmen des Fotos:', error);
+      alert('Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const retakePhoto = () => {
+  const retakePhoto = async () => {
+    // Clear captured image state
     setCapturedImage(null);
     setShowShareModal(false);
-  };
-
-  const downloadImage = async () => {
-    if (!previewRef.current) return;
-
+    
     try {
-      const canvas = await html2canvas(previewRef.current, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-
-      const link = document.createElement('a');
-      link.download = `selfie-${Date.now()}.png`;
-      link.href = canvas.toDataURL();
-      link.click();
+      // Force a small delay before restarting camera (helps on iOS)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Start the camera again
+      await startCamera();
     } catch (error) {
-      console.error('Fehler beim Download:', error);
-      alert('Download fehlgeschlagen. Bitte versuchen Sie es erneut.');
+      console.error('Fehler beim Neustarten der Kamera:', error);
+      
+      // Final fallback for iOS
+      setTimeout(() => {
+        startCamera();
+      }, 800);
     }
   };
 
@@ -176,7 +234,8 @@ const CameraView = ({ appConfig }) => {
       textAlign: 'center',
       maxWidth: '90%',
       fontWeight: 'bold',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+      zIndex: 10
     };
     
     // Position
@@ -239,25 +298,40 @@ const CameraView = ({ appConfig }) => {
                     playsInline
                     muted
                     className="w-full h-full object-cover transform scale-x-[-1]"
+                    style={{ 
+                      opacity: cameraReady ? 1 : 0.5,
+                      transition: 'opacity 0.3s ease-in-out'
+                    }}
                   />
                   <canvas ref={canvasRef} className="hidden" />
+                  
+                  {/* Camera loading indicator */}
+                  {!cameraReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
+                      <div className="text-white text-center">
+                        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <p className="text-sm">Kamera wird geladen...</p>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
-                <div ref={previewRef} className="relative w-full h-full">
+                <div ref={previewRef} className="relative w-full h-full" data-preview="true">
                   <img
                     src={capturedImage}
                     alt="Captured selfie"
                     className="w-full h-full object-cover"
                   />
                   
-                  {/* Frame Overlay */}
-                  <div 
-                    className="absolute inset-0 bg-center bg-cover pointer-events-none"
-                    style={{ 
-                      backgroundImage: `url(${selectedFrame.url})`,
-                      mixBlendMode: 'multiply'
-                    }}
-                  />
+                  {/* Text Overlay */}
+                  {appConfig.textOverlay?.enabled && overlayText && (
+                    <div style={textOverlayStyle}>
+                      {appConfig.textOverlay.useLocation && (
+                        <SafeIcon icon={FiMapPin} className="inline-block mr-1" />
+                      )}
+                      {overlayText}
+                    </div>
+                  )}
                   
                   {/* Logo Overlay */}
                   {appConfig.logo.url && (
@@ -270,25 +344,27 @@ const CameraView = ({ appConfig }) => {
                             appConfig.logo.size === 'large' ? 'h-16' : 'h-12'}
                           object-contain drop-shadow-lg
                         `}
+                        crossOrigin="anonymous"
                       />
                     </div>
                   )}
                   
-                  {/* Text Overlay */}
-                  {appConfig.textOverlay?.enabled && overlayText && (
-                    <div style={textOverlayStyle}>
-                      {appConfig.textOverlay.useLocation && (
-                        <SafeIcon icon={FiMapPin} className="inline-block mr-1" />
-                      )}
-                      {overlayText}
-                    </div>
+                  {/* Frame Overlay - only show if frame has URL */}
+                  {selectedFrame.url && (
+                    <div 
+                      className="absolute inset-0 bg-center bg-cover pointer-events-none"
+                      style={{ 
+                        backgroundImage: `url(${selectedFrame.url})`,
+                        mixBlendMode: 'multiply'
+                      }}
+                    />
                   )}
                 </div>
               )}
 
               {/* Loading Overlay */}
               {isLoading && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
                   <div className="bg-white rounded-full p-4">
                     <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
@@ -296,7 +372,7 @@ const CameraView = ({ appConfig }) => {
               )}
               
               {/* Live Text Overlay Preview */}
-              {!capturedImage && appConfig.textOverlay?.enabled && overlayText && (
+              {!capturedImage && appConfig.textOverlay?.enabled && overlayText && cameraReady && (
                 <div style={textOverlayStyle}>
                   {appConfig.textOverlay.useLocation && (
                     <SafeIcon icon={FiMapPin} className="inline-block mr-1" />
@@ -312,13 +388,14 @@ const CameraView = ({ appConfig }) => {
                 <>
                   <motion.button
                     onClick={capturePhoto}
-                    disabled={isLoading}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    disabled={isLoading || !cameraReady}
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: cameraReady ? 1.05 : 1 }}
+                    whileTap={{ scale: cameraReady ? 0.95 : 1 }}
+                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                   >
                     <SafeIcon icon={FiCamera} className="w-6 h-6" />
-                    <span>Foto aufnehmen</span>
+                    <span>{cameraReady ? 'Foto aufnehmen' : 'Kamera lädt...'}</span>
                   </motion.button>
                 </>
               ) : (
@@ -328,19 +405,14 @@ const CameraView = ({ appConfig }) => {
                     className="bg-gray-600 text-white px-6 py-3 rounded-full font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    style={{ 
+                      touchAction: 'manipulation', 
+                      WebkitTapHighlightColor: 'transparent',
+                      WebkitAppearance: 'none'
+                    }}
                   >
                     <SafeIcon icon={FiRotateCcw} className="w-5 h-5" />
                     <span>Wiederholen</span>
-                  </motion.button>
-                  
-                  <motion.button
-                    onClick={downloadImage}
-                    className="bg-green-600 text-white px-6 py-3 rounded-full font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <SafeIcon icon={FiDownload} className="w-5 h-5" />
-                    <span>Download</span>
                   </motion.button>
                   
                   <motion.button
@@ -348,6 +420,11 @@ const CameraView = ({ appConfig }) => {
                     className="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    style={{ 
+                      touchAction: 'manipulation', 
+                      WebkitTapHighlightColor: 'transparent',
+                      WebkitAppearance: 'none'
+                    }}
                   >
                     <SafeIcon icon={FiShare2} className="w-5 h-5" />
                     <span>Teilen</span>
@@ -375,6 +452,8 @@ const CameraView = ({ appConfig }) => {
             image={capturedImage}
             businessName={appConfig.businessName}
             onClose={() => setShowShareModal(false)}
+            selectedFrame={selectedFrame}
+            previewRef={previewRef}
           />
         )}
       </AnimatePresence>

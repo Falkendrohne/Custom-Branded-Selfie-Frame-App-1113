@@ -1,21 +1,21 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import * as FiIcons from 'react-icons/fi';
-import SafeIcon from '../common/SafeIcon';
+import React from 'react'
+import { motion } from 'framer-motion'
+import * as FiIcons from 'react-icons/fi'
+import SafeIcon from '../common/SafeIcon'
 
-const { FiX, FiShare2, FiFacebook, FiTwitter, FiInstagram } = FiIcons;
+const { FiX, FiShare2, FiFacebook, FiTwitter, FiInstagram, FiMail } = FiIcons
 
 const SocialShare = ({ image, businessName, onClose }) => {
-  const shareText = `Schaut euch mein tolles Selfie mit ${businessName} an! 📸✨`;
-
+  const shareText = `Schaut euch mein tolles Selfie mit ${businessName} an! 📸✨`
+  
   const shareOptions = [
     {
       name: 'Facebook',
       icon: FiFacebook,
       color: 'bg-blue-600',
       action: () => {
-        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(shareText)}`;
-        window.open(url, '_blank', 'width=600,height=400');
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(shareText)}`
+        window.open(url, '_blank', 'width=600,height=400')
       }
     },
     {
@@ -23,16 +23,8 @@ const SocialShare = ({ image, businessName, onClose }) => {
       icon: FiTwitter,
       color: 'bg-sky-500',
       action: () => {
-        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
-        window.open(url, '_blank', 'width=600,height=400');
-      }
-    },
-    {
-      name: 'Instagram',
-      icon: FiInstagram,
-      color: 'bg-pink-600',
-      action: () => {
-        alert('Bitte speichern Sie das Bild und teilen Sie es manuell auf Instagram.');
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`
+        window.open(url, '_blank', 'width=600,height=400')
       }
     },
     {
@@ -40,11 +32,19 @@ const SocialShare = ({ image, businessName, onClose }) => {
       icon: FiShare2,
       color: 'bg-green-600',
       action: () => {
-        const url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + window.location.href)}`;
-        window.open(url, '_blank');
+        const url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + window.location.href)}`
+        window.open(url, '_blank')
+      }
+    },
+    {
+      name: 'E-Mail',
+      icon: FiMail,
+      color: 'bg-purple-600',
+      action: () => {
+        window.location.href = `mailto:?subject=${encodeURIComponent(`Selfie mit ${businessName}`)}&body=${encodeURIComponent(shareText + '\n\n' + window.location.href)}`
       }
     }
-  ];
+  ]
 
   return (
     <motion.div
@@ -73,11 +73,7 @@ const SocialShare = ({ image, businessName, onClose }) => {
 
         <div className="mb-6">
           <div className="aspect-square w-32 mx-auto rounded-lg overflow-hidden shadow-lg">
-            <img
-              src={image}
-              alt="Selfie preview"
-              className="w-full h-full object-cover"
-            />
+            <img src={image} alt="Selfie preview" className="w-full h-full object-cover" />
           </div>
         </div>
 
@@ -85,7 +81,6 @@ const SocialShare = ({ image, businessName, onClose }) => {
           <p className="text-sm text-gray-600 text-center mb-4">
             Teilen Sie Ihr Selfie auf Ihren sozialen Medien
           </p>
-          
           <div className="grid grid-cols-2 gap-3">
             {shareOptions.map((option) => (
               <motion.button
@@ -109,7 +104,7 @@ const SocialShare = ({ image, businessName, onClose }) => {
         </div>
       </motion.div>
     </motion.div>
-  );
-};
+  )
+}
 
-export default SocialShare;
+export default SocialShare

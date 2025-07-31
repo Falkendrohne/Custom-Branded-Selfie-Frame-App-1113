@@ -39,17 +39,18 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
         url: newFrame.url,
         isDefault: false
       };
-      
       setAppConfig(prev => ({
         ...prev,
         frames: [...prev.frames, frame]
       }));
-      
       setNewFrame({ name: '', url: '' });
     }
   };
 
   const removeFrame = (frameId) => {
+    // Don't allow removing the "No Frame" option (id: 0)
+    if (frameId === 0) return;
+    
     setAppConfig(prev => ({
       ...prev,
       frames: prev.frames.filter(f => f.id !== frameId)
@@ -124,11 +125,22 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
             whileHover={{ scale: 1.02 }}
           >
             <div className="aspect-[3/4] bg-gray-100">
-              <img
-                src={frame.url}
-                alt={frame.name}
-                className="w-full h-full object-cover"
-              />
+              {frame.url ? (
+                <img
+                  src={frame.url}
+                  alt={frame.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <span className="text-gray-500 text-xl">✕</span>
+                    </div>
+                    <p className="text-gray-500 text-sm">Kein Rahmen</p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="p-4">
               <div className="flex justify-between items-center mb-2">
@@ -146,12 +158,14 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                 >
                   Standard
                 </button>
-                <button
-                  onClick={() => removeFrame(frame.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
-                >
-                  <SafeIcon icon={FiTrash2} className="w-4 h-4" />
-                </button>
+                {frame.id !== 0 && ( // Don't show delete button for "No Frame" option
+                  <button
+                    onClick={() => removeFrame(frame.id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
+                  >
+                    <SafeIcon icon={FiTrash2} className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
@@ -164,7 +178,6 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
     <div className="space-y-6">
       <div className="bg-gray-50 rounded-lg p-6">
         <h3 className="font-semibold text-gray-800 mb-4">Logo-Einstellungen</h3>
-        
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -178,7 +191,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               placeholder="https://example.com/logo.png"
             />
           </div>
-
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Logo-Größe
@@ -193,7 +206,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               <option value="large">Groß</option>
             </select>
           </div>
-
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Position
@@ -209,7 +222,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               <option value="bottom-center">Unten Mitte</option>
             </select>
           </div>
-
+          
           <button
             onClick={updateLogo}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
@@ -218,7 +231,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
             <span>Logo speichern</span>
           </button>
         </div>
-
+        
         {logoSettings.url && (
           <div className="mt-6 p-4 bg-white rounded-lg border">
             <h4 className="font-medium text-gray-800 mb-2">Vorschau</h4>
@@ -243,24 +256,20 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
     <div className="space-y-6">
       <div className="bg-gray-50 rounded-lg p-6">
         <h3 className="font-semibold text-gray-800 mb-4">Text Overlay Einstellungen</h3>
-        
         <div className="space-y-4">
           <div className="flex items-center">
             <input
               type="checkbox"
               id="enableTextOverlay"
               checked={textOverlaySettings.enabled}
-              onChange={(e) => setTextOverlaySettings(prev => ({ 
-                ...prev, 
-                enabled: e.target.checked 
-              }))}
+              onChange={(e) => setTextOverlaySettings(prev => ({ ...prev, enabled: e.target.checked }))}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <label htmlFor="enableTextOverlay" className="ml-2 block text-sm text-gray-700">
               Text Overlay aktivieren
             </label>
           </div>
-
+          
           <div className="mt-4 space-y-4">
             <div>
               <div className="flex items-center space-x-2 mb-2">
@@ -269,10 +278,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                   id="customText"
                   name="textType"
                   checked={!textOverlaySettings.useLocation}
-                  onChange={() => setTextOverlaySettings(prev => ({ 
-                    ...prev, 
-                    useLocation: false 
-                  }))}
+                  onChange={() => setTextOverlaySettings(prev => ({ ...prev, useLocation: false }))}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
                 />
                 <label htmlFor="customText" className="block text-sm font-medium text-gray-700">
@@ -282,16 +288,13 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               <input
                 type="text"
                 value={textOverlaySettings.text}
-                onChange={(e) => setTextOverlaySettings(prev => ({ 
-                  ...prev, 
-                  text: e.target.value 
-                }))}
+                onChange={(e) => setTextOverlaySettings(prev => ({ ...prev, text: e.target.value }))}
                 disabled={textOverlaySettings.useLocation}
                 placeholder="Slogan oder URL hinzufügen"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
-
+            
             <div>
               <div className="flex items-center space-x-2 mb-2">
                 <input
@@ -299,10 +302,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                   id="locationText"
                   name="textType"
                   checked={textOverlaySettings.useLocation}
-                  onChange={() => setTextOverlaySettings(prev => ({ 
-                    ...prev, 
-                    useLocation: true 
-                  }))}
+                  onChange={() => setTextOverlaySettings(prev => ({ ...prev, useLocation: true }))}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
                 />
                 <label htmlFor="locationText" className="block text-sm font-medium text-gray-700">
@@ -313,43 +313,34 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                 <input
                   type="text"
                   value={textOverlaySettings.locationPrefix}
-                  onChange={(e) => setTextOverlaySettings(prev => ({ 
-                    ...prev, 
-                    locationPrefix: e.target.value 
-                  }))}
+                  onChange={(e) => setTextOverlaySettings(prev => ({ ...prev, locationPrefix: e.target.value }))}
                   placeholder="Ich bin hier:"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               )}
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Position
               </label>
               <select
                 value={textOverlaySettings.position}
-                onChange={(e) => setTextOverlaySettings(prev => ({ 
-                  ...prev, 
-                  position: e.target.value 
-                }))}
+                onChange={(e) => setTextOverlaySettings(prev => ({ ...prev, position: e.target.value }))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="top">Oben</option>
                 <option value="bottom">Unten</option>
               </select>
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Schriftgröße
               </label>
               <select
                 value={textOverlaySettings.fontSize}
-                onChange={(e) => setTextOverlaySettings(prev => ({ 
-                  ...prev, 
-                  fontSize: e.target.value 
-                }))}
+                onChange={(e) => setTextOverlaySettings(prev => ({ ...prev, fontSize: e.target.value }))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="small">Klein</option>
@@ -357,17 +348,14 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                 <option value="large">Groß</option>
               </select>
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Farbschema
               </label>
               <select
                 value={textOverlaySettings.colorScheme}
-                onChange={(e) => setTextOverlaySettings(prev => ({ 
-                  ...prev, 
-                  colorScheme: e.target.value 
-                }))}
+                onChange={(e) => setTextOverlaySettings(prev => ({ ...prev, colorScheme: e.target.value }))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="primary">Primär- und Sekundärfarbe</option>
@@ -375,7 +363,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               </select>
             </div>
           </div>
-
+          
           <button
             onClick={updateTextOverlay}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
@@ -384,14 +372,14 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
             <span>Text-Einstellungen speichern</span>
           </button>
         </div>
-
+        
         {textOverlaySettings.enabled && (
           <div className="mt-6 p-4 bg-white rounded-lg border">
             <h4 className="font-medium text-gray-800 mb-2">Vorschau</h4>
             <div className="relative w-full h-16 flex items-center justify-center">
-              <div 
+              <div
                 className={`
-                  px-4 py-1 rounded-lg 
+                  px-4 py-1 rounded-lg
                   ${textOverlaySettings.colorScheme === 'primary' 
                     ? `bg-[${appConfig.primaryColor}] text-[${appConfig.secondaryColor}]` 
                     : 'bg-black text-white'}
@@ -399,16 +387,12 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                     textOverlaySettings.fontSize === 'large' ? 'text-xl' : 'text-base'}
                 `}
                 style={{
-                  backgroundColor: textOverlaySettings.colorScheme === 'primary' 
-                    ? appConfig.primaryColor 
-                    : 'black',
-                  color: textOverlaySettings.colorScheme === 'primary' 
-                    ? appConfig.secondaryColor 
-                    : 'white'
+                  backgroundColor: textOverlaySettings.colorScheme === 'primary' ? appConfig.primaryColor : 'black',
+                  color: textOverlaySettings.colorScheme === 'primary' ? appConfig.secondaryColor : 'white'
                 }}
               >
                 {textOverlaySettings.useLocation 
-                  ? `${textOverlaySettings.locationPrefix} [Standort wird angezeigt]` 
+                  ? `${textOverlaySettings.locationPrefix} [Standort wird angezeigt]`
                   : textOverlaySettings.text || 'Beispieltext'}
               </div>
             </div>
@@ -422,7 +406,6 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
     <div className="space-y-6">
       <div className="bg-gray-50 rounded-lg p-6">
         <h3 className="font-semibold text-gray-800 mb-4">Unternehmens-Einstellungen</h3>
-        
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -436,7 +419,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               placeholder="Ihr Unternehmensname"
             />
           </div>
-
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -449,7 +432,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
                 className="w-full h-12 border border-gray-300 rounded-lg cursor-pointer"
               />
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sekundärfarbe
@@ -462,7 +445,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               />
             </div>
           </div>
-
+          
           <button
             onClick={updateBusinessSettings}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
@@ -489,7 +472,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               Verwalten Sie Ihre Selfie-App Einstellungen
             </p>
           </div>
-
+          
           <div className="flex flex-wrap border-b border-gray-200">
             {tabs.map((tab) => (
               <button
@@ -508,7 +491,7 @@ const AdminPanel = ({ appConfig, setAppConfig }) => {
               </button>
             ))}
           </div>
-
+          
           <div className="p-6">
             {activeTab === 'frames' && renderFramesTab()}
             {activeTab === 'logo' && renderLogoTab()}

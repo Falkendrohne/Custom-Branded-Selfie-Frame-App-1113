@@ -1,6 +1,6 @@
 .app-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-h: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
 }
 
 /* Custom scrollbar */
@@ -14,17 +14,17 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4F46E5;
+  background: #3b82f6;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4338CA;
+  background: #2563eb;
 }
 
 /* Smooth transitions */
 * {
-  transition: all 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
 /* Loading animation */
@@ -37,26 +37,37 @@
   animation: spin 1s linear infinite;
 }
 
-/* Glass effect */
-.glass-effect {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Hover effects */
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .mobile-padding {
-    padding: 1rem;
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari button fixes */
+  button {
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   
-  .mobile-text {
-    font-size: 0.875rem;
+  /* Fix for iOS download buttons */
+  a[download], a[href^="blob:"] {
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    display: inline-block;
   }
+}
+
+/* Touch-friendly button styles */
+.touch-friendly {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Ensure video elements work properly on iOS */
+video {
+  -webkit-playsinline: true;
+  playsinline: true;
+  -webkit-background-size: cover;
+  background-size: cover;
 }
